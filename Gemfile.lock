@@ -1,0 +1,26 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    lmdb (0.7.0)
+    nio4r (2.7.5)
+    puma (6.6.1)
+      nio4r (~> 2.0)
+    rack (3.2.4)
+    rackup (2.3.1)
+      rack (>= 3)
+    roda (3.99.0)
+      rack
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  lmdb (~> 0.7.0)
+  puma (~> 6.6)
+  rack (~> 3.1)
+  rackup (~> 2.2)
+  roda (~> 3.93)
+
+BUNDLED WITH
+   2.7.2
