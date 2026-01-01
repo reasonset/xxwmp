@@ -7,3 +7,7 @@ gem "puma", "~> 6.6"
 gem "rack", "~> 3.1"
 gem "rackup", "~> 2.2"
 gem "lmdb", "~> 0.7.0"
+
+gem "base64", "~> 0.3.0"
+
+gem "oj", "~> 3.16"

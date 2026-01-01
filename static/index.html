@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <title>XXWMP</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <link type="text/css" rel="stylesheet" href="/theme.css" />
+    <script src="/appdata.js"></script>
+    <script src="/main.js" defer type="module"></script>
+  </head>
+  <body>
+    <div id="Browser">
+      <div id="Control">
+        <input type="text" size="32" id="CurrentPath" readonly style="max-width: 100%;" />
+        <div id="ControlButtonContainer">
+          <div class="ctlbtn" id="UpParent"><img src="/img/arrow-up.svg" /><span class="ctlbtnlabel"> ..</span></div>
+          <div class="ctlbtn" id="PlayAllAudio"><img src="/img/music.svg" /><span class="ctlbtnlabel"> Play Audio</span></div>
+          <div class="ctlbtn" id="PlayAllVideos"><img src="/img/video.svg" /><span class="ctlbtnlabel"> Play Video</span></div>
+          <div class="ctlbtn" id="ShowPlayer"><img src="/img/play.svg" /><span class="ctlbtnlabel"> Show Player</span></div>
+          <div class="ctlbtn" id="BookReader"><img src="/img/book-open.svg" /><span class="ctlbtnlabel"> Book Reader</span></div>
+        </div>
+      </div>
+      <div id="FileList">
+      </div>
+    </div>
+    <div id="Player" style="display: none">
+      <div id="PlayControl">
+        <div class="ctlbtn" id="BackToBrowser"><img src="/img/arrow-left-circle.svg" /> Back to Browser</div>
+      </div>
+      <div id="CoverImage"></div>
+      <div id="PlayerContainer">
+        <div id="MediaPlayer"></div>
+      </div>
+      <div id="PlayListControl"><img src="/img/arrow-left-circle.svg" id="PlaylistPrev" /><img src="/img/arrow-right-circle.svg" id="PlaylistNext" /></div>
+      <div id="PlayList"></div>
+    </div>
+    <div id="ImgViewer">
+      <figure id="ImgViewerFigure"><img /></figure>
+    </div>
+    <div id="BookReaderBox" tabindex="0">
+      <div id="BookReaderOptionModalBox">
+        <div id="BookReaderOptionModal">
+          <form id="BookReaderOptionForm">
+            <button id="BookReaderOptionSpread">Toggle Spread View</button>
+            <button id="BookReaderOptionOrder">Toggle Page Order</button><br />
+            <label>Page <input type="text" size="4" id="BookReaderPageNumber" /></label><button id="BookReaderPageJump">Go</button>
+          </form>
+        </div>
+      </div>
+      <canvas id="BookReaderCanvas"></canvas>
+    </div>
+    <div id="TextViewerBox">
+      <div id="TextViewerCloseBox"><button id="TextViewerCloseBtn"><img src="/img/x-circle.svg" /></button></div>
+      <textarea id="TextViewer" readonly="readonly"></textarea>
+    </div>
+    <div id="MsgBox" class="msghide">Msg</div>
+    <div id="ProgressWrapper" style="display: none;">
+      <div id="NowLoading"><span class="loading_text">Now Loading</span></div>
+    </div>
+    <div id="LoginScreen">
+      <div id="LoginBox">
+        <form id="LoginBasicForm">
+          <fieldset>
+            <legend>Login</legend>
+            <input type="text" size="36" class="formerrmsg" readonly id="LoginFormErrMsg"/><br />
+            <label>User: <input type="text" name="user" id="LoginFormUser" /></label><br />
+            <label>Password: <input type="password" name="password" /></label><br />
+            <button id="LoginSubmit" class="uibtn">Authenticate</button>
+          </fieldset>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

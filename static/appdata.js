@@ -1,0 +1,3 @@
+var appdata = {
+  user: null
+}
