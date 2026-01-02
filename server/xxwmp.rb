@@ -29,6 +29,12 @@ class Xxwmp < Roda
   class BadRequest < StandardError
   end
 
+  class NoSuch < StandardError
+  end
+
+  class IllegalPath < StandardError
+  end
+
   class LackEnvironment < StandardError
   end
   
@@ -68,8 +74,6 @@ class Xxwmp < Roda
     end
 
     r.get "auth" do
-      $stderr.puts r.params
-      $stderr.puts r.cookies
       rp = r.headers["X-Original-Request-Path"]
       user = rp.split("/")[2] # "" / API / USER / ...
       begin
@@ -81,14 +85,13 @@ class Xxwmp < Roda
           ""
         end
       rescue => e
-        $stderr.puts e.full_message
         if NoUser === e
           response.status = 403
           ""
         else
           response.status = 500
           response["Content-Type"] = "text/plain"
-          e.to_s
+          ""
         end
       end
     end
@@ -106,8 +109,6 @@ class Xxwmp < Roda
     r.on %r:browse/([^/]+)(/.*)?: do |user, path|
       # rp = r.headers["X-Original-Request-Path"]
       # user = rp.split("/")[2]
-      $stderr.puts user
-      $stderr.puts path.inspect
       
       begin
         browser = MediaPlayer.new(CONFIG, user, path)
@@ -116,21 +117,27 @@ class Xxwmp < Roda
         response["Content-Type"] = "application/json"
         Oj.dump val
       rescue => e
-        if BadRequest === e
+        if BadRequest === e || IllegalPath === e
           response.status = 400
+          ""
+        elsif NoSuch === e
+          response.status = 404
           ""
         else
           response.status = 500
           response["Content-Type"] = "text/plain"
-          e.to_s
+          ""
         end
       end
     end
     
     r.get("config") do
-      ""
+      Oj.dump({
+        "server_name" => CONFIG["server_name"],
+        "use_metadata" => false
+      })
     end
   end
 end
 
-Rackup::Handler::Puma.run Xxwmp.app, Host: "127.5.0.1", Port: 8000
+Rackup::Handler::Puma.run Xxwmp.app, Host: Xxwmp::CONFIG["server_host"], Port: Xxwmp::CONFIG["server_port"]

@@ -12,11 +12,11 @@
       <div id="Control">
         <input type="text" size="32" id="CurrentPath" readonly style="max-width: 100%;" />
         <div id="ControlButtonContainer">
-          <div class="ctlbtn" id="UpParent"><img src="/img/arrow-up.svg" /><span class="ctlbtnlabel"> ..</span></div>
-          <div class="ctlbtn" id="PlayAllAudio"><img src="/img/music.svg" /><span class="ctlbtnlabel"> Play Audio</span></div>
-          <div class="ctlbtn" id="PlayAllVideos"><img src="/img/video.svg" /><span class="ctlbtnlabel"> Play Video</span></div>
-          <div class="ctlbtn" id="ShowPlayer"><img src="/img/play.svg" /><span class="ctlbtnlabel"> Show Player</span></div>
-          <div class="ctlbtn" id="BookReader"><img src="/img/book-open.svg" /><span class="ctlbtnlabel"> Book Reader</span></div>
+          <div class="ctlbtn" id="UpParent"><img src="/img/arrow-up.svg" class="svgicon" /><span class="ctlbtnlabel"> ..</span></div>
+          <div class="ctlbtn" id="PlayAllAudio"><img src="/img/music.svg" class="svgicon" /><span class="ctlbtnlabel"> Play Audio</span></div>
+          <div class="ctlbtn" id="PlayAllVideos"><img src="/img/video.svg" class="svgicon" /><span class="ctlbtnlabel"> Play Video</span></div>
+          <div class="ctlbtn" id="ShowPlayer"><img src="/img/play.svg" class="svgicon" /><span class="ctlbtnlabel"> Show Player</span></div>
+          <div class="ctlbtn" id="BookReader"><img src="/img/book-open.svg" class="svgicon" /><span class="ctlbtnlabel"> Book Reader</span></div>
         </div>
       </div>
       <div id="FileList">
@@ -24,13 +24,13 @@
     </div>
     <div id="Player" style="display: none">
       <div id="PlayControl">
-        <div class="ctlbtn" id="BackToBrowser"><img src="/img/arrow-left-circle.svg" /> Back to Browser</div>
+        <div class="ctlbtn" id="BackToBrowser"><img src="/img/arrow-left-circle.svg" class="svgicon" /> Back to Browser</div>
       </div>
       <div id="CoverImage"></div>
       <div id="PlayerContainer">
         <div id="MediaPlayer"></div>
       </div>
-      <div id="PlayListControl"><img src="/img/arrow-left-circle.svg" id="PlaylistPrev" /><img src="/img/arrow-right-circle.svg" id="PlaylistNext" /></div>
+      <div id="PlayListControl"><img src="/img/arrow-left-circle.svg" id="PlaylistPrev" class="svgicon" /><img src="/img/arrow-right-circle.svg" id="PlaylistNext" class="svgicon" /></div>
       <div id="PlayList"></div>
     </div>
     <div id="ImgViewer">
@@ -62,8 +62,8 @@
           <fieldset>
             <legend>Login</legend>
             <input type="text" size="36" class="formerrmsg" readonly id="LoginFormErrMsg"/><br />
-            <label>User: <input type="text" name="user" id="LoginFormUser" /></label><br />
-            <label>Password: <input type="password" name="password" /></label><br />
+            <label>User: <input type="text" name="user" id="LoginFormUser" class="form_input_text" /></label><br />
+            <label>Password: <input type="password" name="password" class="form_input_text" /></label><br />
             <button id="LoginSubmit" class="uibtn">Authenticate</button>
           </fieldset>
         </form>

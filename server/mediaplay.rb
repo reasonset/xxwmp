@@ -1,3 +1,10 @@
+# @license Apache-2.0
+# Copyright (c) 2026 Masaki Haruka
+# 
+# This file is a modified version of the original source from:
+# github.com/reasonset/localwebmediaplayer
+# (Modified to integrate with XXWMP)
+
 class Xxwmp < Roda
   module DirList
 
@@ -87,9 +94,6 @@ class Xxwmp < Roda
   end
 
   class MediaPlayer
-    class IllegalPath < StandardError
-    end
-
     include DirList
 
     def initialize config, user, path
@@ -97,22 +101,23 @@ class Xxwmp < Roda
       @user = user
       path = "/" if !path || path.empty?
       @path = path.sub(%r:^/+:, "").gsub(%r:/{2,}:, "/")
-      if (@path.include?('\\')) || @path.split("/").include?("..")
-        raise BadRequest
-      end
-      
+
       @root = File.join config["media_root"], user
-    end
-    
-    def addons val
-      if @cgi["info"] == "true"
-        val["environment"] = {
-          "root" => ENV["MEDIA_ROOT"],
-          "server_name" => ENV["LWMP_INSTANCE_NAME"],
-          "use_metadata" => (ENV["METADATA_DATABASE"] && !ENV["METADATA_DATABASE"].empty?),
-          "env" => ENV
-        }
+
+      ########################
+      # Sanitize malformed path
+      path = @path.empty? ? nil : @path
+      dirpath = path ? File.join(@root, path) : @root
+      root_real = File.realpath(File.expand_path(@root)).sub(%r:/?$:, "/")
+      if !File.exist?(dirpath)
+        raise NoSuch
       end
+      dirpath = File.realpath(File.expand_path(dirpath)).sub(%r:/?$:, "/")
+
+      if (@path.include?('\\')) || @path.split("/").include?("..") || dirpath[0, root_real.size] != root_real
+        raise IllegalPath
+      end
+      ########################
     end
   end
 end

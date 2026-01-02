@@ -1,0 +1,6 @@
+---
+media_root: /srv/http/xxwmp/media
+server_name: YourServerName
+server_host: localhost
+server_port: 8000
+password_seed: "YouMustReplaceWithRandomString"

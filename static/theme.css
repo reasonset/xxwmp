@@ -343,6 +343,45 @@ body {
 .formerrmsg {
   border: 0px none;
   outline: 0px none;
-  color: red;
+  color: #ff3648;
   font-weight: bold;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  body {
+    background-color: #1f1f24;
+    color: #ffffff;
+  }
+
+  #Control {
+    background-color: #1f1f24;
+  }
+
+  .svgicon {
+    filter: invert(93%) sepia(7%) saturate(461%) hue-rotate(183deg) brightness(95%) contrast(95%);
+  }
+
+  input {
+    background-color: transparent;
+    color: #ffffff;
+  }
+
+  #PlayList .current_playitem {
+    background-color: #09244a;
+  }
+
+  #LoginScreen {
+    background-color: #000000ec;
+    color: #fff;
+  }
+
+  .form_input_text {
+    border: 0px none;
+    outline: 0px none;
+    border-bottom: #5e8dcf 2px solid;
+  }
+
+  .ctlbtn, .uibtn {
+    color: #fff;
+  }
 }

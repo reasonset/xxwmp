@@ -85,4 +85,4 @@ const http = {
   }
 }
 
-export {http, openModal}
+export {http}

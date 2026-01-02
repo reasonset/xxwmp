@@ -1,4 +1,6 @@
-import {http, openModal} from '/contentfetch.mjs'
+/* @license Apache-2.0 | Copyright (c) 2026 Masaki Haruka | Modified from https://github.com/reasonset/localwebmediaplayer | See LICENSE for details */
+
+import {http} from '/contentfetch.mjs'
 
 var playlist = []
 var currentState = {
@@ -41,11 +43,6 @@ const load_browser = async function (path) {
   currentState.filelist = result
   build_imglist()
 
-  if (result.environment) {
-    currentState.systemInfo = result.environment
-    document.title = result.environment.server_name + " - Local Web Media Player"
-  }
-  
   const filelist_div = document.createElement("div")
   filelist_div.id = "FileList"
 
@@ -57,6 +54,7 @@ const load_browser = async function (path) {
     fii.className = "folder"
     const fiii = document.createElement("img")
     fiii.src = "/img/folder.svg"
+    fiii.className = "svgicon"
     const fin = document.createElement("div")
     fin.className = "filename"
     const fint = document.createTextNode(i.path.replace(/.*\//, ""))
@@ -86,6 +84,7 @@ const load_browser = async function (path) {
     const fin = document.createElement("div")
     fin.className = "filename"
     const fint = document.createTextNode(i.path.replace(/.*\//, ""))
+    fiii.className = "svgicon"
     fii.appendChild(fiii)
     fin.appendChild(fint)
     fi.appendChild(fii)
@@ -691,12 +690,16 @@ window.addEventListener("load", async e => {
   }, "")
   
   let res
+  let conf
   try {
+    conf = await http.get("/config")
     res = await http.get("/authcheck")
   } catch (e) {
     msg_show("HTTP Error", "err")
     return    
   }
+  currentState.systemInfo = conf
+  document.title = conf.server_name + " - XXWMP"
   appdata.user = res.user
   load_browser_with_state(initial_path)
 })

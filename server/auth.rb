@@ -5,7 +5,7 @@ class Xxwmp < Roda
       user, pw = Base64.decode64($1).split(":")
       return false if !user || user.empty?
       valid_pw = USERS_DB[user]
-      return false unless Digest::SHA256.hexdigest(pw) == valid_pw
+      return false unless Digest::SHA256.hexdigest(Xxwmp::CONFIG["password_seed"] + pw) == valid_pw
       
       user
     end
@@ -13,7 +13,7 @@ class Xxwmp < Roda
     def post_auth(user, pw)
       return false if !user || user.empty?
       valid_pw = USERS_DB[user]
-      return false unless Digest::SHA256.hexdigest(pw) == valid_pw
+      return false unless Digest::SHA256.hexdigest(Xxwmp::CONFIG["password_seed"] + pw) == valid_pw
       
       user
     end
@@ -33,14 +33,9 @@ class Xxwmp < Roda
       return false unless token
       now = Time.now.to_i
       val = TOKENS_DB[token]
-      $stderr.puts val
       return false unless val
       u, x = val.split(":")
-      $stderr.puts u
-      $stderr.puts user
       return false unless user == u
-      $stderr.puts now
-      $stderr.puts x.to_i
       return false if now > x.to_i
       create_token(u, token, now)
   
