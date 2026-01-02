@@ -64,7 +64,6 @@ const http = {
       })
     } else if (res.ok) {
       const text = await res.text()
-      console.log(text)
       if (res.status === 204 || !text) {
         // No content
         return null

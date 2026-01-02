@@ -53,14 +53,18 @@ There is also no convenient feature such as a user‑initiated password reset li
 
 ## Configure web server
 
-## Nginx
+### Nginx
 
 Refer to `config/webserver.sample/nginx.conf` for configuration examples.
+
+### Caddy
+
+Refer to `config/webserver.sample/Caddyfile` for configuration examples.
 
 ### Other servers
 
 Currently, only Nginx has been tested.  
-However, in theory, it should also work with Caddy, Lighttpd, or Apache.
+However, in theory, it should also work with Lighttpd, or Apache.
 
 The application will function correctly as long as routing is configured as follows:
 

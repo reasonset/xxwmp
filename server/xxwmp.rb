@@ -15,6 +15,16 @@ require 'oj'
 require_relative 'auth'
 require_relative 'mediaplay'
 
+def debug msg
+  if ENV["DEBUG"] = "yes"
+    if String === msg
+      $stderr.puts msg
+    else
+      $stderr.puts msg.inspect
+    end
+  end
+end
+
 class Xxwmp < Roda
   SLIDE_EXPIRE = 60 * 60 * 72
 
@@ -61,6 +71,8 @@ class Xxwmp < Roda
     end
 
     r.post "login" do
+      debug "login"
+      debug r.params
       params = r.params
       if user = post_auth(params["user"], params["password"])
         token = create_token(user)
@@ -74,8 +86,11 @@ class Xxwmp < Roda
     end
 
     r.get "auth" do
+      debug "auth"
       rp = r.headers["X-Original-Request-Path"]
       user = rp.split("/")[2] # "" / API / USER / ...
+      debug rp
+      debug user
       begin
         if valid_token?(user, r.cookies["token"])
           response.status = 204

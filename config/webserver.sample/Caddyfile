@@ -1,0 +1,32 @@
+xxwmp.example.tld {
+	@auth_required {
+		path /media/* /browse/*
+	}
+
+	@proxy_to {
+		path /browse/* /authcheck /config /login
+	}
+
+	# Conform to server_host:server_port
+	forward_auth @auth_required 127.5.0.1:8000 {
+		uri /auth
+		header_up X-Original-Request-Path {uri}
+	}
+
+	handle /media/* {
+		# Conform to XXWMP public root
+		root * /srv/http/xxwmp
+		file_server
+	}
+
+	# Conform to server_host:server_port
+	handle @proxy_to {
+		reverse_proxy 127.5.0.1:8000
+	}
+
+	handle {
+		# Conform to XXWMP static root
+		root * /srv/http/xxwmp/src
+		file_server
+	}
+}

@@ -53,10 +53,14 @@ LWMPの主旨で使うのであれば、XXWMPではなくLWMPを利用するこ�
 
 `config/webserver.sample/nginx.conf` を参考にして設定してほしい。
 
+### Caddy
+
+`config/webserver.sample/Caddyfile` を参考にして設定してほしい。
+
 ### Other servers
 
 現状ではテストされているのはNginxだけである。
-ただし、理屈上ではCaddy, Lighttpd, Apacheでも動作する。
+ただし、理屈上ではLighttpd, Apacheでも動作する。
 
 アプリケーションとしては以下のようにルーティングできれば正しく動作する。
 
