@@ -25,11 +25,13 @@ var currentState = {
 }
 
 const mediaURI = function (path) {
-  return ["", "media" , appdata.user, encodeURI(path)].join("/")
+  const path_encoded = path.split("/").map(i => encodeURIComponent(i)).join("/")
+  return ["", "media" , appdata.user, path_encoded].join("/")
 }
 
 const browseURI = function (path) {
-  return ["", "browse" , appdata.user, encodeURI(path)].join("/")
+  const path_encoded = path.split("/").map(i => encodeURIComponent(i)).join("/")
+  return ["", "browse" , appdata.user, path_encoded].join("/")
 }
 
 const load_browser = async function (path) {

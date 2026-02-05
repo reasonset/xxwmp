@@ -4,6 +4,7 @@
 # This file is a modified version of the original source from:
 # github.com/reasonset/localwebmediaplayer
 # (Modified to integrate with XXWMP)
+require 'cgi'
 
 class Xxwmp < Roda
   module DirList
@@ -100,7 +101,7 @@ class Xxwmp < Roda
       @config = config
       @user = user
       path = "/" if !path || path.empty?
-      @path = path.sub(%r:^/+:, "").gsub(%r:/{2,}:, "/")
+      @path = path.sub(%r:^/+:, "").gsub(%r:/{2,}:, "/").split("/").map {|i| CGI.unescape(i)}.join("/")
 
       @root = File.join config["media_root"], user
 
