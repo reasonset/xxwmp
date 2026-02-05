@@ -1,3 +1,8 @@
+require 'securerandom'
+require 'openssl'
+require 'base64'
+require 'oj'
+
 class Xxwmp < Roda
   module Authenticater
     def basic_auth(auth)
@@ -16,6 +21,34 @@ class Xxwmp < Roda
       return false unless Digest::SHA256.hexdigest(Xxwmp::CONFIG["password_seed"] + pw) == valid_pw
       
       user
+    end
+
+    def create_publickey_challenge
+      token = SecureRandom.uuid
+      secret = SecureRandom.alphanumeric
+      PUBKEY_CHALLENGE.transaction do
+        PUBKEY_CHALLENGE_DB[token] = Oj.dump({
+          "secret" => secret,
+          "expire" => Time.now.to_i + (60*5)
+        })
+      end
+      {"secret" => secret, "challenge_token" => token}
+    end
+
+    def pubkey_auth(signature:, publickey:, token:)
+      challenge = PUBKEY_CHALLENGE_DB[token]
+      return nil unless challenge
+      challenge = Oj.load challenge
+      now = Time.now.to_i
+      return nil if now > challenge["expire"]
+      sig_bin = Base64.decode64(signature)
+      pubkey = OpenSSL::PKey.read(["-----BEGIN PUBLIC KEY-----", publickey, "-----END PUBLIC KEY-----"].join("\n"))
+      
+      if pubkey.verify(nil, sig_bin, challenge["secret"])
+        PUBKEY_DB[publickey]
+      else
+        nil
+      end
     end
     
     def create_token(user, token=nil, now=nil)
@@ -45,6 +78,20 @@ class Xxwmp < Roda
     def getuser_from_token(token)
       return nil if !token || token.empty?
       TOKENS_DB[token]&.split(":")&.first
+    end
+
+    def unauthorized response
+      response.status = 401
+      case CONFIG["auth_method"]
+      when "publickey"
+        challenge_params = create_publickey_challenge
+        response["WWW-Authenticate"] = "PublicKey"
+        response["Content-Type"] = "application/json"
+        Oj.dump(challenge_params)
+      else
+        response["WWW-Authenticate"] = "Password"
+        ""
+      end
     end
   end
 end

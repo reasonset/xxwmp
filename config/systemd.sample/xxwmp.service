@@ -1,0 +1,15 @@
+[Unit]
+Description=XXWMP Internet version LWMP media player/browser
+
+[Service]
+RestartSec=2s
+Type=simple
+User=http
+Group=http
+
+ExecStart=/usr/bin/bundle exec ruby /usr/local/opt/xxwmp/server/xxwmp.rb
+Restart=always
+WorkingDirectory=/usr/local/opt/xxwmp
+
+[Install]
+WantedBy=multi-user.target

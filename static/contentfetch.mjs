@@ -1,5 +1,12 @@
 let failedQueue = []
 
+let PubKeyAuth
+try {
+  PubKeyAuth = (await import("/pubkeyauth.js"))?.PubKeyAuth
+} catch(e) {
+  void 0
+}
+
 class HTTPStatusError extends Error {
   constructor(response, ...arg) {
     super(...arg)
@@ -51,17 +58,32 @@ document.getElementById("LoginSubmit").addEventListener("click", event => {
   handleLoginSubmit()
 })
 
+const authWithPubkey = async function(body) {
+  const pka = new PubKeyAuth("/login")
+  const res = await pka.auth(body.secret, body.challenge_token)
+  return res
+}
+
 const http = {
   get: async function (url, options = {}) {
     const res = await fetch(url)
     if (res.status == 401) {
-      openModal()
-      
-      return new Promise((resolve, reject) => {
-        failedQueue.push({resolve, reject})
-      }).then(() => {
-        return http.get(url)
-      })
+      const response_body = await res.json()
+      if (res.headers.get("www-authenticate") === "PublicKey") {
+        const auth_res = await authWithPubkey(response_body)
+        if (auth_res.ok) {
+          return http.get(url)
+        } else {
+          location.replace("/keyexport.html")
+        }
+      } else {
+        openModal()
+        return new Promise((resolve, reject) => {
+          failedQueue.push({resolve, reject})
+        }).then(() => {
+          return http.get(url)
+        })
+      }
     } else if (res.ok) {
       const text = await res.text()
       if (res.status === 204 || !text) {

@@ -6,8 +6,6 @@ require 'roda'
 require 'puma'
 require 'rackup'
 require 'rack/handler/puma' 
-require 'securerandom'
-require 'base64'
 require 'digest'
 require 'yaml'
 require 'oj'
@@ -32,6 +30,10 @@ class Xxwmp < Roda
   RPATH = Bundler.root
   TOKENS = LMDB.new(File.join(RPATH, "var", "tokens"))
   TOKENS_DB = TOKENS.database
+  PUBKEY_CHALLENGE = LMDB.new(File.join(RPATH, "var", "pubkey-challenge"))
+  PUBKEY_CHALLENGE_DB = PUBKEY_CHALLENGE.database
+  PUBKEY = LMDB.new(File.join(RPATH, "var", "pubkey"))
+  PUBKEY_DB = PUBKEY.database
   USERS = LMDB.new(File.join(RPATH, "var", "users"))
   USERS_DB = USERS.database  
   CONFIG = YAML.load File.read File.join(RPATH, "config", "xxwmp.yaml")
@@ -55,6 +57,7 @@ class Xxwmp < Roda
 
   plugin :request_headers
   plugin :cookies, path: "/", same_site: :lax, http_only: true, secure: true
+  plugin :json_parser
 
   route do |r|
     r.get "basic" do
@@ -74,7 +77,19 @@ class Xxwmp < Roda
       debug "login"
       debug r.params
       params = r.params
-      if user = post_auth(params["user"], params["password"])
+      
+      user = case CONFIG["auth_method"]
+      when "publickey"
+        pubkey_auth(
+          signature: params["signature"],
+          publickey: params["publicKey"],
+          token: params["token"]
+        )
+      else
+        post_auth(params["user"], params["password"])
+      end
+
+      if user
         token = create_token(user)
         response.set_cookie("token", token)
         response.status = 204
@@ -96,8 +111,7 @@ class Xxwmp < Roda
           response.status = 204
           ""
         else
-          response.status = 401
-          ""
+          unauthorized response
         end
       rescue => e
         if NoUser === e
@@ -116,8 +130,7 @@ class Xxwmp < Roda
       if user
         Oj.dump({"user" =>  user})
       else
-        response.status = 401
-        ""
+        unauthorized response
       end
     end
 
