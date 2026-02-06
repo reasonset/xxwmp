@@ -682,7 +682,7 @@ const hide_progress = function() {
 /**
  * Load initial location.
  */
-window.addEventListener("load", async e => {
+const app_initialize = async () => {
   let initial_path = window.location.search.replace(/^\?/, "") || ""
   initial_path = decodeURIComponent(initial_path)
   history.replaceState({
@@ -704,7 +704,7 @@ window.addEventListener("load", async e => {
   document.title = conf.server_name + " - XXWMP"
   appdata.user = res.user
   load_browser_with_state(initial_path)
-})
+}
 
 // Setup navigation button events
 
@@ -842,3 +842,5 @@ window.addEventListener("popstate", e => {
     }
   }
 })
+
+app_initialize()
