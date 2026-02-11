@@ -1,11 +1,11 @@
 @font-face {
   font-family: "absuifont";
-  src: url("/fonts/ui/Genos-Medium.ttf");
+  src: url("/fonts/ui/Genos-Medium.woff2") format('woff2');
 }
 
 @font-face {
   font-family: "absnamefont";
-  src: url("/fonts/generic/FiraSansCondensed-Medium.ttf");
+  src: url("/fonts/generic/FiraSansCondensed-Medium.woff2") format('woff2');
   font-display: swap;
 }
 
