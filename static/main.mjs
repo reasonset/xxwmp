@@ -33,7 +33,7 @@ const mediaURI = function (path) {
 }
 
 const thumbURI = function (path) {
-  const path_encoded = path.split("/").map(i => encodeURIComponent(i)).join("/")
+  const path_encoded = (path + ".thumb.webp").split("/").map(i => encodeURIComponent(i)).join("/")
   return ["", "thumb" , appdata.user, path_encoded].join("/")
 }
 
@@ -50,7 +50,6 @@ const thumbnailObserver = new IntersectionObserver((entries, observer) => {
       const thumb = img.dataset.thumbnail
       const temp_img = new Image()
       temp_img.onload = () => {
-        console.log("LOADED")
         img.src = thumb
         img.className = "thumbnail"
       }
@@ -119,7 +118,6 @@ const load_browser = async function(path) {
     const fiii = document.createElement("img")
     fiii.src = `/img/${i.type}.svg`
     if (currentState.systemInfo.use_thumbnail && ["video", "music", "image"].includes(i.type)) {
-      console.log(i)
       fiii.dataset.thumbnail = thumbURI(i.path)
       fiii.className = "svgicon lazy-thumb"
     } else {
