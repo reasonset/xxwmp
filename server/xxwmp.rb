@@ -162,7 +162,8 @@ class Xxwmp < Roda
     r.get("config") do
       Oj.dump({
         "server_name" => CONFIG["server_name"],
-        "use_metadata" => false
+        "use_metadata" => false,
+        "use_thumbnail" => CONFIG["use_thumbnail"]
       })
     end
   end

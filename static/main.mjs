@@ -32,10 +32,36 @@ const mediaURI = function (path) {
   return ["", "media" , appdata.user, path_encoded].join("/")
 }
 
+const thumbURI = function (path) {
+  const path_encoded = path.split("/").map(i => encodeURIComponent(i)).join("/")
+  return ["", "thumb" , appdata.user, path_encoded].join("/")
+}
+
 const browseURI = function (path) {
   const path_encoded = path.split("/").map(i => encodeURIComponent(i)).join("/")
   return ["", "browse" , appdata.user, path_encoded].join("/")
 }
+
+// Lazy image load observer
+const thumbnailObserver = new IntersectionObserver((entries, observer) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const img = entry.target
+      const thumb = img.dataset.thumbnail
+      const temp_img = new Image()
+      temp_img.onload = () => {
+        console.log("LOADED")
+        img.src = thumb
+        img.className = "thumbnail"
+      }
+      temp_img.onerror = () => {
+        console.warn('Thumbnail load failed for:', thumb)
+      }
+      temp_img.src = thumb
+      observer.unobserve(img)
+    }
+  })
+}, {})
 
 const load_browser = async function(path) {
   let result
@@ -47,6 +73,12 @@ const load_browser = async function(path) {
   }
   currentState.filelist = result
   build_imglist()
+  thumbnailObserver.disconnect()
+
+  if (result.environment) {
+    currentState.systemInfo = result.environment
+    document.title = result.environment.server_name + " - Local Web Media Player"
+  }
 
   const filelist_div = document.createElement("div")
   filelist_div.id = "FileList"
@@ -86,10 +118,16 @@ const load_browser = async function(path) {
     fii.className = i.type
     const fiii = document.createElement("img")
     fiii.src = `/img/${i.type}.svg`
+    if (currentState.systemInfo.use_thumbnail && ["video", "music", "image"].includes(i.type)) {
+      console.log(i)
+      fiii.dataset.thumbnail = thumbURI(i.path)
+      fiii.className = "svgicon lazy-thumb"
+    } else {
+      fiii.className = "svgicon"
+    }
     const fin = document.createElement("div")
     fin.className = "filename"
     const fint = document.createTextNode(i.path.replace(/.*\//, ""))
-    fiii.className = "svgicon"
     fii.appendChild(fiii)
     fin.appendChild(fint)
     fi.appendChild(fii)
@@ -112,6 +150,10 @@ const load_browser = async function(path) {
 
   const l = document.getElementById("FileList")
   l.replaceWith(filelist_div)
+
+  filelist_div.querySelectorAll('.lazy-thumb').forEach(el => {
+    thumbnailObserver.observe(el)
+  })
 
   if (currentState.scroll_position[path] != null) {
     window.scrollTo({top: currentState.scroll_position[path]})

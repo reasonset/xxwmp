@@ -1,6 +1,6 @@
 xxwmp.example.tld {
 	@auth_required {
-		path /media/* /browse/*
+		path /media/* /browse/* /thumb/*
 	}
 
 	@proxy_to {
@@ -15,6 +15,17 @@ xxwmp.example.tld {
 
 	handle /media/* {
 		# Conform to XXWMP public root
+		root * /srv/http/xxwmp
+		file_server
+	}
+
+	handle /media/* {
+		# Conform to XXWMP public root
+		root * /srv/http/xxwmp
+		file_server
+	}
+
+	handle /thumb/* {
 		root * /srv/http/xxwmp
 		file_server
 	}
