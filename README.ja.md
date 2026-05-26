@@ -99,6 +99,72 @@ ruby cli/useradd.rb
 
 各ユーザーのファイルは`<media_root>/<user>/`以下に配置する。
 
+## 追加機能
+
+### 認証
+
+通常、認証は一般的なユーザーIDとパスワードを用いた方式で行う。
+このパスワードは、`cli/useradd.rb`によって設定する。
+
+`auth_method`によってこれ以外の認証方式を選択できる。
+
+`publickey`はSSHのような公開鍵認証とチャレンジレスポンス方式を組み合わせたような認証を行う。
+`auth_method`が`publickey`に設定されている場合、認証された鍵ペアをもたない端末はエクスポートされた公開鍵が表示される。
+これを次のようにして登録する。
+
+```
+ruby cli/publickey.rb add <user_id> <publickey>
+```
+
+登録を解除するには次のようにする。
+
+```
+ruby cli/publickey.rb remove <publickey>
+```
+
+同じ公開鍵を複数のユーザーに登録することはできない。
+
+### メタデータ
+
+`xxwmp.yaml`で`use_metadata`を真にすることでメタデータ機能を有効にする。
+
+メタデータ機能が有効になっていると、クライアントがプレイリストをリクエストしたとき、サーバーは音声・動画ファイルのメタデータを含んだプレイリストを返す。
+このとき、当該ファイルのメタデータがまだ取得されていない場合、`ffprobe`を用いて取得する。
+
+メタデータの保存先は`meta_root`で指定したディレクトリ以下になる。
+`meta_root`はウェブサーバーによって配信されるパスである必要はない。
+
+この機能は内部でファイルのチェックなしに`ffprobe`をコールする。
+**ファイルの出どころが常に明確で安全であることを確信できない限り有効にしてはならない。**
+
+### サムネイル
+
+`xxwmp.yaml`で`use_thumbnail`を真にすることでサムネイル機能を有効にする。
+
+サムネイル機能が有効になっている場合、クライアントはファイルブラウザウィンドウで交差オブザーバーを用いて表示されているメディアファイルのサムネイルを取得し、置き換える。
+サムネイルは事前にコマンドを用いて生成する必要がある。
+
+サムネイル操作コマンドは次のとおり
+
+```
+cli/create-thumbnail.rb <media_root> <thumbnail_root>
+```
+
+`thumbnail_root`はサムネイルを配置するためのディレクトリである。
+このディレクトリはクライアントから`/thumb/`としてアクセスできる必要がある。
+
+`create-thumbnail.rb`は内部でファイルのチェックなしに`ffmpeg`とImageMagickをコールする。
+**ファイルの出どころが常に明確で安全であることを確信できない限り有効にしてはならない。**
+
+### 動画/オーディオプレイヤーライブラリ
+
+`xxwmp.yaml`で`videoplayer`および`audioplayer`を指定することで、通常の`video`/`audio`要素に代わり動画プレイヤーライブラリを使用する。
+
+これらは指定した場合のみCDNからロードされる。
+
+指定できる値は`vidstack` (Vidstack), `vlitejs` (vLiteJS), `plyr` (Plyr), `fluid` (Fluid Player)である。
+このうち`fluid`は`audioplayer`の値としては使えない。
+
 ## Open Source Licenses
 
 This project is licensed under the Apache License 2.0. 
@@ -110,3 +176,4 @@ However, it includes or bundles the following third-party components under diffe
 - [Local Web Media Player](https://github.com/reasonset/localwebmediaplayer) - Distributed under the [Apache-2.0](http://www.apache.org/licenses/)
 
 For more details and the full text of the licenses, please refer to the [LICENSE-3RD-PARTY.md](LICENSE-3RD-PARTY.md) file.
+

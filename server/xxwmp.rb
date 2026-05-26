@@ -12,6 +12,7 @@ require 'oj'
 
 require_relative 'auth'
 require_relative 'mediaplay'
+require_relative 'metadata'
 
 def debug msg
   if ENV["DEBUG"] = "yes"
@@ -102,6 +103,7 @@ class Xxwmp < Roda
 
     r.get "auth" do
       debug "auth"
+      debug r.params
       rp = r.headers["X-Original-Request-Path"]
       user = rp.split("/")[2] # "" / API / USER / ...
       debug rp
@@ -146,10 +148,36 @@ class Xxwmp < Roda
         Oj.dump val
       rescue => e
         if BadRequest === e || IllegalPath === e
+          debug e
           response.status = 400
           ""
         elsif NoSuch === e
           response.status = 404
+          ""
+        else
+          debug e
+          response.status = 500
+          response["Content-Type"] = "text/plain"
+          ""
+        end
+      end
+    end
+
+    r.post("metadata", String) do |user|
+      begin
+        metaobj = XXWMPMetadata.new(CONFIG, user)
+        debug user
+        debug r.params
+        result = metaobj.get r.params["missing_metadata"]
+        debug result
+        Oj.dump result
+      rescue => e
+        debug e
+        if XXWMPMetadata::MetadataDisabledError
+          response.status = 404
+          ""
+        elsif XXWMPMetadata::BadRequestError
+          response.status = 400
           ""
         else
           response.status = 500
@@ -162,8 +190,10 @@ class Xxwmp < Roda
     r.get("config") do
       Oj.dump({
         "server_name" => CONFIG["server_name"],
-        "use_metadata" => false,
-        "use_thumbnail" => CONFIG["use_thumbnail"]
+        "use_metadata" => CONFIG["use_metadata"],
+        "use_thumbnail" => CONFIG["use_thumbnail"],
+        "videoplayer" => CONFIG["videoplayer"] || "default",
+        "audioplayer" => CONFIG["audioplayer"] || "default"
       })
     end
   end

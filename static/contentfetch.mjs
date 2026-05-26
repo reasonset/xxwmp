@@ -103,6 +103,48 @@ const http = {
     } else {
       throw new HTTPStatusError(res, "HTTP returns error")
     }
+  },
+  post: async function(url, body, options = {}) {
+    options.method = "POST"
+    options.body = JSON.stringify(body)
+    options.headers = {"Content-Type": "application/json"}
+    const res = await fetch(url, options)
+    if (res.status == 401) {
+      const response_body = await res.json()
+      if (res.headers.get("www-authenticate") === "PublicKey") {
+        const auth_res = await authWithPubkey(response_body)
+        if (auth_res.ok) {
+          return http.post(url, options)
+        } else {
+          location.replace("/keyexport.html")
+        }
+      } else {
+        openModal()
+        return new Promise((resolve, reject) => {
+          failedQueue.push({resolve, reject})
+        }).then(() => {
+          return http.post(url, options)
+        })
+      }
+    } else if (res.ok) {
+      const text = await res.text()
+      if (res.status === 204 || !text) {
+        // No content
+        return null
+      } else {
+        if (options.disable_parse_json) {
+          return text
+        } else {
+          try {
+            return JSON.parse(text)
+          } catch(e) {
+            return text
+          }
+        }
+      }
+    } else {
+      throw new HTTPStatusError(res, "HTTP returns error")
+    }
   }
 }
 
