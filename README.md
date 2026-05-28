@@ -109,6 +109,75 @@ Each user’s files should be placed under:
 <media_root>/<user>/
 ```
 
+## Additional Features
+
+### Authentication
+
+By default, authentication is performed using a standard user ID and password.  
+Passwords are set via `cli/useradd.rb`.
+
+You can switch to alternative authentication methods using the `auth_method` setting.
+
+When `auth_method` is set to `publickey`, the server uses a mechanism similar to SSH public key authentication combined with a challenge–response flow.  
+If a client attempts to authenticate without a registered key pair, the server displays an exported public key.  
+Register it using the following command:
+
+```
+ruby cli/publickey.rb add <user_id> <publickey>
+```
+
+To remove a registered key:
+
+```
+ruby cli/publickey.rb remove <publickey>
+```
+
+A single public key cannot be registered to multiple users.
+
+### Metadata
+
+Enable metadata support by setting `use_metadata` to `true` in `xxwmp.yaml`.
+
+When metadata is enabled, the server returns playlists that include audio/video metadata whenever a client requests a playlist.  
+If metadata for a file has not yet been retrieved, the server uses `ffprobe` to extract it.
+
+Metadata is stored under the directory specified by `meta_root`.  
+This directory does **not** need to be served by the web server.
+
+Internally, this feature invokes `ffprobe` without performing file safety checks.  
+Do **not** enable it unless you are certain that all media files come from a safe and trusted source.
+
+### Thumbnails
+
+Enable thumbnail support by setting `use_thumbnail` to `true` in `xxwmp.yaml`.
+
+When enabled, the client uses an intersection observer in the file browser to fetch and replace media file thumbnails as they appear on screen.  
+Thumbnails must be generated in advance using the following command:
+
+```
+cli/create-thumbnail.rb <media_root> <thumbnail_root>
+```
+
+`thumbnail_root` is the directory where thumbnails are stored.  
+This directory must be accessible to clients under the `/thumb/` path.
+
+Internally, `create-thumbnail.rb` invokes `ffmpeg` and ImageMagick without performing file safety checks.  
+Do **not** enable this feature unless you are certain that all media files come from a safe and trusted source.
+
+### Video/Audio Player Libraries
+
+You can specify custom video or audio player libraries in `xxwmp.yaml` using the `videoplayer` and `audioplayer` settings.  
+When configured, these libraries replace the default HTML `<video>` and `<audio>` elements.
+
+Libraries are loaded from a CDN only when explicitly specified.
+
+Supported values are:
+
+- `vidstack` (Vidstack)  
+- `vlitejs` (vLiteJS)  
+- `plyr` (Plyr)  
+- `fluid` (Fluid Player) — *not available for `audioplayer`*
+
 ## Open Source Licenses
 
 This project is licensed under the Apache License 2.0. 

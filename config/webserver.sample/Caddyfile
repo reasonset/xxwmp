@@ -1,10 +1,10 @@
 xxwmp.example.tld {
 	@auth_required {
-		path /media/* /browse/* /thumb/*
+		path /media/* /browse/* /thumb/* /metadata/*
 	}
 
 	@proxy_to {
-		path /browse/* /authcheck /config /login
+		path /browse/* /authcheck /config /login /metadata/*
 	}
 
 	# Conform to server_host:server_port

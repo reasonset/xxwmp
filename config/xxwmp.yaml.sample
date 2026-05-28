@@ -1,8 +1,12 @@
 ---
 media_root: /srv/http/xxwmp/media
+meta_root: /var/xxwmp/metadata
 server_name: YourServerName
 server_host: localhost
 server_port: 8000
 password_seed: "YouMustReplaceWithRandomString"
-auth_method: publickey
-use_thumbnail: no
+auth_method: publickey  # publickey|password
+use_metadata: no        # Please ensure the security of files yourself.
+use_thumbnail: no       # Please ensure the security of files yourself.
+videoplayer: default    # vidstack|vlitejs|plyr|fluid|default
+audioplayer: default    # vidstack|vlitejs|plyr|default
