@@ -19,10 +19,9 @@ class XXWMPMetadata < Roda
   def initialize(config, user)
     @root = config["media_root"]
     @user_media_root = [config["media_root"], user].join("/")
-    @meta_root = config["meta_root"]
+    @meta_root = File.join(config["data_root"], "metadata")
     @user_meta_root = [@meta_root, user].join("/")
     @ffprobe = config["ffprobe"] || "ffprobe"
-    Encoding.default_external = "UTF-8"
 
     if !config["use_metadata"] || !@meta_root || @meta_root.empty? || !File.directory?(@meta_root)
       raise MetadataDisabledError

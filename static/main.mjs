@@ -1,40 +1,22 @@
 /* @license Apache-2.0 | Copyright (c) 2026 Masaki Haruka | Modified from https://github.com/reasonset/localwebmediaplayer | See LICENSE for details */
 
 import {http} from '/contentfetch.mjs'
-
-var playlist = []
-var currentState = {
-  filelist: [],
-  playlist_index: -1,
-  mediatype: null,
-  path: null,
-  scroll_position: {},
-  viewportX: Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0),
-  cover: null,
-  imglist: [],
-  bookreader: {
-    spread: true,
-    rtl: false,
-    current_page: null,
-    shown: false,
-    force_single: false,
-    preload_strategy: {fetch: "ahead", cache: "cache"},
-    prefetched_urls: new Set(),
-    prefetched_images: new Map(),
-  },
-  currentView: null,
-  systemInfo: {},
-  metadata: {}
-}
+import { audio_error_handler } from './audio-error-handler.js'
+import { msg_show } from './msgwindow.js'
+import { currentState } from './current_state.js'
 
 const mediaURI = function (path) {
-  const path_encoded = path.split("/").map(i => encodeURIComponent(i)).join("/")
-  return ["", "media" , appdata.user, path_encoded].join("/")
+  const origin = ["", "/media/", appdata.user, path.split("/").map(encodeURIComponent).join("/") ].join("/")
+  if (currentState.transcode[origin]) {
+    return currentState.transcode[origin]
+  } else {
+    return origin
+  }
 }
 
 const thumbURI = function (path) {
   const path_encoded = (path + ".thumb.webp").split("/").map(i => encodeURIComponent(i)).join("/")
-  return ["", "thumb" , appdata.user, path_encoded].join("/")
+  return ["", "transcode", "thumb" , appdata.user, path_encoded].join("/")
 }
 
 const browseURI = function (path) {
@@ -47,16 +29,18 @@ const thumbnailObserver = new IntersectionObserver((entries, observer) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       const img = entry.target
-      const thumb = img.dataset.thumbnail
-      const temp_img = new Image()
-      temp_img.onload = () => {
-        img.src = thumb
-        img.className = "thumbnail"
+      if (img.dataset.thumbnail) {
+        const thumb = img.dataset.thumbnail
+        const temp_img = new Image()
+        temp_img.onload = () => {
+          img.src = thumb
+          img.className = "thumbnail"
+        }
+        temp_img.onerror = () => {
+          console.warn('Thumbnail load failed for:', thumb)
+        }
+        temp_img.src = thumb
       }
-      temp_img.onerror = () => {
-        console.warn('Thumbnail load failed for:', thumb)
-      }
-      temp_img.src = thumb
       observer.unobserve(img)
     }
   })
@@ -88,6 +72,11 @@ const setupSystemInfo = function(env) {
         create_videoelem = mod.create_videoelem_fluid
       })
       break
+    case 'videojs':
+      import("/videoplayer-videojs.js").then(mod => {
+        create_videoelem = mod.create_videoelem_videojs
+      })
+      break
     default:
       void 0
   }
@@ -109,8 +98,39 @@ const setupSystemInfo = function(env) {
         create_audioelem = mod.create_audioelem_plyr
       })
       break
+    case "videojs":
+      import("/videoplayer-videojs.js").then(mod => {
+        create_audioelem = mod.create_audioelem_videojs
+      })
+      break
     default:
       void 0
+  }
+
+  // Get transcode data list
+  getTranscodeInfo()
+}
+
+const toggle_fullscreen = function(elem) {
+  if (document.fullscreenElement) {
+    document.exitFullscreen()
+  } else {
+    elem.requestFullscreen().catch((err) => {
+      console.error(`Error enabling fullscreen: ${err.message}`);
+    })
+  }
+}
+
+const exit_fullscreen = function() {
+  if (document.fullscreenElement) { document.exitFullscreen() }
+}
+
+const getTranscodeInfo = async function() {
+  try {
+    const result = await http.get("/info/transcode_meta.json")
+    currentState.transcode = result
+  } catch(e) {
+    void 0
   }
 }
 
@@ -164,7 +184,7 @@ const load_browser = async function(path) {
     fii.className = i.type
     const fiii = document.createElement("img")
     fiii.src = `/img/${i.type}.svg`
-    if (currentState.systemInfo.use_thumbnail && ["video", "music", "image"].includes(i.type)) {
+    if (currentState.systemInfo.use_thumbnail && i.thumbnail && ["video", "music", "image"].includes(i.type)) {
       fiii.dataset.thumbnail = thumbURI(i.path)
       fiii.className = "svgicon lazy-thumb"
     } else {
@@ -237,7 +257,12 @@ const create_videoelem_vanilla = function(src, tags=null) {
   media_div.controls = true
   media_div.preload = "auto"
   media_div.letsPlay = media_div.play
+  media_div.handlePlay = media_div.play
+  media_div.handlePause = media_div.pause
   media_div.updateSrc = (src, tags) => { media_div.src = src }
+  media_div.call_ended = callback => {
+    media_div.addEventListener("ended", callback)
+  }
   return media_div
 }
 
@@ -248,15 +273,50 @@ const create_audioelem_vanilla = function(src, tags=null) {
   media_div.controls = true
   media_div.preload = "auto"
   media_div.letsPlay = media_div.play
+  media_div.handlePlay = media_div.play
+  media_div.handlePause = media_div.pause
   media_div.updateSrc = (src, tags) => { media_div.src = src }
+  media_div.addEventListener("error", audio_error_handler)
+  media_div.call_ended = callback => {
+    media_div.addEventListener("ended", callback)
+  }
   return media_div
 }
 
 var create_videoelem = create_videoelem_vanilla
 var create_audioelem = create_audioelem_vanilla
 
+const update_trackcontrol = function() {
+  navigator.mediaSession?.setActionHandler('nexttrack', (currentState.playlist[currentState.playlist_index + 1]) ? (e => {
+    playlist_next()
+  }) : null)
+
+  navigator.mediaSession?.setActionHandler('previoustrack', (currentState.playlist_index > 0) ? (e => {
+    playlist_prev()
+  }) : null)
+}
+
+const enblae_playcontrol = function() {
+  navigator.mediaSession?.setActionHandler('play', e => {
+    const media_div = document.getElementById("MediaPlayer")
+    media_div.handlePlay()
+  })
+
+  navigator.mediaSession?.setActionHandler('pause', e => {
+    const media_div = document.getElementById("MediaPlayer")
+    media_div.handlePause()
+  })
+}
+
+const disable_playcontrol = function() {
+  navigator.mediaSession?.setActionHandler('play', null)
+  navigator.mediaSession?.setActionHandler('pause', null)
+  navigator.mediaSession?.setActionHandler('nexttrack', null)
+  navigator.mediaSession?.setActionHandler('previoustrack', null)
+}
+
 const set_playlist = async function(type, pathes) {
-  playlist = []
+  currentState.playlist = []
   const ple = document.createElement("div")
   ple.id = "PlayList"
   if (currentState.systemInfo.use_metadata) {
@@ -278,7 +338,7 @@ const set_playlist = async function(type, pathes) {
   }
   for (let i=0; i < pathes.length; i++) {
     let acttype = type || get_type_from_ext(pathes[i].replace(/.*\./, ""))
-    playlist.push({
+    currentState.playlist.push({
       path: pathes[i],
       index: i,
       type: acttype,
@@ -288,7 +348,7 @@ const set_playlist = async function(type, pathes) {
     li.dataset.filePath = pathes[i]
     li.dataset.index = i
     const lit = document.createTextNode(
-      currentState.metadata[pathes[i]]?.tags?.title || pathes[i].replace(/.*\//, "")
+      currentState.metadata[pathes[i]]?.tags?.title ? (currentState.metadata[pathes[i]].tags.title + (currentState.metadata[pathes[i]]?.tags?.artist ? ` - ${currentState.metadata[pathes[i]].tags.artist}` : "")) : pathes[i].replace(/.*\//, "")
     )
     li.appendChild(lit)
     ple.appendChild(li)
@@ -296,13 +356,13 @@ const set_playlist = async function(type, pathes) {
     li.addEventListener("click", e => {
       if (!type) {
         if (acttype === "video" || acttype === "music") {
-          load_player(playlist[i], {keep_cover: true})
+          load_player(currentState.playlist[i], {keep_cover: true})
         } else {
           // skip playlist
           return
         }
       } else {
-        load_player(playlist[i], {keep_cover: true})
+        load_player(currentState.playlist[i], {keep_cover: true})
       }
     })
   }
@@ -357,13 +417,14 @@ const load_player = function(playlist_item, options={}) {
   }
 
   if (sametype) {
-    media_div.updateSrc(mediaURI(playlist_item.path), currentState.metadata[playlist_item.path]?.tags)
+    media_div.updateSrc(mediaURI(playlist_item.path), (currentState.metadata[playlist_item.path]?.tags || {}))
   } else {
     const player_div = document.getElementById("MediaPlayer")
-    media_div.addEventListener("ended", e => {
-      if (currentState.playlist_index + 1 < playlist.length) {
-        load_player(playlist[currentState.playlist_index + 1], {cover: options.cover})
+    media_div.call_ended(e => {
+      if (currentState.playlist_index + 1 < currentState.playlist.length) {
+        load_player(currentState.playlist[currentState.playlist_index + 1], {cover: options.cover})
       } else {
+        disable_playcontrol()
         msg_show("Playback complete.")
       }
     })
@@ -375,12 +436,19 @@ const load_player = function(playlist_item, options={}) {
       navigator.mediaSession.metadata = new MediaMetadata(currentState.metadata[playlist_item.path].tags)
     }
   })
+
+  // Handle mediaSession.setActionHandler()
+  update_trackcontrol()
+  if (!currentState.player_exist) {
+    enblae_playcontrol()
+    currentState.player_exist = true
+  }
 }
 
 const file_click = async function(target, type) {
   if (type === "list") {
     await set_playlist(null, target.playlist)
-    load_player(playlist[0])
+    load_player(currentState.playlist[0])
     switch_player_with_state()
   } else {
     single_play(target.dataset.filePath, type)
@@ -396,7 +464,7 @@ const single_play = async function(path, type) {
     open(mediaURI(path))
   } else if (type === "music" || type === "video") {
     await set_playlist(type, [path])
-    load_player(playlist[0])
+    load_player(currentState.playlist[0])
     switch_player_with_state()
   }
 }
@@ -413,7 +481,7 @@ const play_all_videos = async function() {
     return
   }
   await set_playlist("video", list)
-  load_player(playlist[0])
+  load_player(currentState.playlist[0])
   switch_player_with_state()
 }
 
@@ -429,19 +497,19 @@ const play_all_audio = async function() {
     return
   }
   await set_playlist("music", list)
-  load_player(playlist[0], {cover: currentState.cover})
+  load_player(currentState.playlist[0], {cover: currentState.cover})
   switch_player_with_state()
 }
 
 const playlist_prev = function(e) {
   if (currentState.playlist_index > 0) {
-    load_player(playlist[currentState.playlist_index - 1], {keep_cover: true})
+    load_player(currentState.playlist[currentState.playlist_index - 1], {keep_cover: true})
   }
 }
 
 const playlist_next = function(e) {
-  if (currentState.playlist_index < playlist.length) {
-    load_player(playlist[currentState.playlist_index + 1], {keep_cover: true})
+  if (currentState.playlist_index < currentState.playlist.length) {
+    load_player(currentState.playlist[currentState.playlist_index + 1], {keep_cover: true})
   }
 }
 
@@ -530,7 +598,9 @@ const hide_imgview_callback = function(e) {
   const img = document.getElementById("ImgViewerFigure").firstChild
   const rect = img.getBoundingClientRect()
   const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
   const zone_width = rect.width / 3
+  const zone_height = rect.height / 5
 
   if (x < zone_width) {
     const index = currentState.imglist.indexOf(img.dataset.path)
@@ -538,7 +608,11 @@ const hide_imgview_callback = function(e) {
       switch_imgview(currentState.imglist[index - 1])
     }
   } else if (x < zone_width * 2) {
-    history.back()
+    if (y < zone_height) {
+      toggle_fullscreen(document.getElementById("ImgViewer"))
+    } else {
+      history.back()
+    }
   } else {
     const index = currentState.imglist.indexOf(img.dataset.path)
     if (index < currentState.imglist.length - 1) {
@@ -718,7 +792,7 @@ const bookreader = {
     }
   },
 
-  async draw_page_spread({pagenum, canvas, ctx, scale, rect, maxWidth, maxHeight, page}) {
+  async draw_page_spread({pagenum, container, page}) {
     if (page > currentState.imglist.length - 2) { page = currentState.imglist.length - 2 }
     const img1 = this.img(page)
     const img2 = this.img(page + 1)
@@ -728,61 +802,47 @@ const bookreader = {
     await img1.decode()
     await img2.decode()
 
-    const aspect1 = img1.width / img1.height
-    const aspect2 = img2.width / img2.height
+    const aspect1 = img1.naturalWidth / img1.naturalHeight
+    const aspect2 = img2.naturalWidth / img2.naturalHeight
 
     if (aspect1 > 1 || aspect2 > 1) {
       currentState.bookreader.force_single = true
-      this.draw_page_single({pagenum, canvas, ctx, scale, rect, maxWidth, maxHeight, page})
+      this.draw_page_single({pagenum, container, page})
       return
     } else {
       currentState.bookreader.force_single = false
     }
 
-    const targetHeight = maxHeight
-    const drawWidth1 = targetHeight * aspect1
-    const drawWidth2 = targetHeight * aspect2
+    container.replaceChildren()
+    container.className = "book-spread"
 
-    let fitScale = 1
-    if (drawWidth1 > (maxWidth / 2) || drawWidth2 > (maxWidth / 2)) {
-      fitScale = Math.min(((maxWidth / 2) / drawWidth1), ((maxWidth / 2) / drawWidth2))
-    }
+    const wrapper = document.createElement("div")
+    wrapper.className = "book-spread-wrapper"
+    wrapper.style.flexDirection = currentState.bookreader.rtl ? "row-reverse" : "row"
 
-    const finalHeight = targetHeight * fitScale / scale
-    const finalWidth1 = drawWidth1 * fitScale / scale
-    const finalWidth2 = drawWidth2 * fitScale / scale
+    img1.style = ""
+    img2.style = ""
 
-    const centerX = rect.width / 2
-    const x1 = currentState.bookreader.rtl ? centerX : centerX - finalWidth1
-    const y1 = (rect.height - finalHeight) / 2
-    const y2 = y1
-    const x2 = currentState.bookreader.rtl ? centerX - finalWidth2 : centerX
-
-    ctx.drawImage(img1, x1, y1, finalWidth1, finalHeight)
-    ctx.drawImage(img2, x2, y2, finalWidth2, finalHeight)
+    wrapper.appendChild(img1)
+    wrapper.appendChild(img2)
+    container.appendChild(wrapper)
 
     currentState.bookreader.page = page
     pagenum.value = page + 1
   },
 
-  async draw_page_single({pagenum, canvas, ctx, scale, rect, maxWidth, maxHeight, page}) {
+  async draw_page_single({pagenum, container, page}) {
     if (page > currentState.imglist.length - 1) { page = currentState.imglist.length - 1 }
     const img = this.img(page)
 
     this.prefetch(page)
 
     img.decode().then(() => {
-      const hScale = maxHeight / img.height
-      const wScale = maxWidth / img.width
-      const iscale = Math.min(hScale, wScale)
-      const drawWidth = img.width * iscale / scale
-      const drawHeight = img.height * iscale / scale
-
-      const y = (rect.height - drawHeight) / 2
-      const centerX = rect.width / 2
-      const x = centerX - (drawWidth / 2)
-      ctx.drawImage(img, x, y, drawWidth, drawHeight)
-
+      container.replaceChildren()
+      container.className = ""
+  
+      container.appendChild(img)
+  
       currentState.bookreader.page = page
       pagenum.value = page + 1
     })
@@ -790,26 +850,15 @@ const bookreader = {
 
   draw(page=0) {
     const pagenum = document.getElementById("BookReaderPageNumber")
-    const canvas = document.getElementById("BookReaderCanvas")
-    const ctx = canvas.getContext("2d")
-    const scale = window.devicePixelRatio
-
-    const desired_height = window.innerHeight
-    canvas.style.height = desired_height + "px"
-    const rect = canvas.getBoundingClientRect()
-    const maxWidth = rect.width * scale
-    const maxHeight = rect.height * scale
-    canvas.width = maxWidth
-    canvas.height = maxHeight
-    ctx.scale(scale, scale)
+    const container = document.getElementById("BookReaderImages")
 
     if (page < 0) { page = 0 }
 
     currentState.force_single = false
     if (currentState.bookreader.spread) {
-      this.draw_page_spread({pagenum, canvas, ctx, scale, rect, maxWidth, maxHeight, page})
+      this.draw_page_spread({pagenum, container, page})
     } else {
-      this.draw_page_single({pagenum, canvas, ctx, scale, rect, maxWidth, maxHeight, page})
+      this.draw_page_single({pagenum, container, page})
     }
   },
 
@@ -849,22 +898,6 @@ const bookreader = {
     this.draw(Number(target_page) - 1)
     e.preventDefault()
   }
-}
-
-const msg_show = function(text, type="info") {
-  const box = document.getElementById("MsgBox")
-  box.innerText = text
-  if (type === "err") {
-    box.className = "msgshow_err"
-  } else {
-    box.className = "msgshow_info"
-  }
-
-  setTimeout(
-    ()=> {
-      box.className = "msghide"
-    }, 3000
-  )
 }
 
 const show_progress = function() {
@@ -928,6 +961,7 @@ document.getElementById("BookReaderOptionModalBox").addEventListener("click", e 
 document.getElementById("BookReaderOptionModal").addEventListener("click", e => { e.stopPropagation() })
 document.getElementById("BookReaderOptionSpread").addEventListener("click", e => {bookreader.opt_spread(e)})
 document.getElementById("BookReaderOptionOrder").addEventListener("click", e => {bookreader.opt_rtl(e)})
+document.getElementById("BookReaderOptionFullscreen").addEventListener("click", e => {e.stopPropagation(); e.preventDefault(); toggle_fullscreen(document.getElementById("BookReaderBox"))})
 document.getElementById("BookReaderPageJump").addEventListener("click", e => {bookreader.opt_jump(e)})
 
 const upelem = document.getElementById("UpParent")
@@ -1025,16 +1059,6 @@ document.getElementById("BookReaderOptionPreloadPageSubmit").addEventListener("c
   }
 })
 
-
-// Media key
-navigator.mediaSession?.setActionHandler('nexttrack', e => {
-  playlist_next()
-})
-
-navigator.mediaSession?.setActionHandler('previoustrack', e => {
-  playlist_prev()
-})
-
 // Back navigation
 window.addEventListener("popstate", e => {
   const state = e.state
@@ -1049,9 +1073,11 @@ window.addEventListener("popstate", e => {
         break
       case "imgview":
         hide_imgview()
+        exit_fullscreen()
         break
       case "book":
         bookreader.hide()
+        exit_fullscreen()
         break
     }
     currentState.currentView = null

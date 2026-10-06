@@ -13,6 +13,10 @@ require 'oj'
 require_relative 'auth'
 require_relative 'mediaplay'
 require_relative 'metadata'
+require_relative 'decode_error'
+
+Encoding.default_external = "UTF-8"
+Encoding.default_internal = "UTF-8"
 
 def debug msg
   if ENV["DEBUG"] = "yes"
@@ -177,6 +181,30 @@ class Xxwmp < Roda
           response.status = 404
           ""
         elsif XXWMPMetadata::BadRequestError
+          response.status = 400
+          ""
+        else
+          response.status = 500
+          response["Content-Type"] = "text/plain"
+          ""
+        end
+      end
+    end
+
+    r.post("decode_error", String) do |user|
+      begin
+        receptionist = XXWMPDecodeErrorReport.new(CONFIG, user)
+        debug user
+        debug r.params
+        receptionist.push r.params
+        response.status = 204
+        ""
+      rescue => e
+        debug e
+        if XXWMPDecodeErrorReport::NotFoundError
+          response.status = 404
+          ""
+        elsif XXWMPDecodeErrorReport::BadRequestError
           response.status = 400
           ""
         else
