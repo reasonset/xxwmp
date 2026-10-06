@@ -1,4 +1,4 @@
-import { http } from '/httpclient.mjs'
+import { http } from '/contentfetch.mjs'
 import { msg_show } from './msgwindow.js'
 import { currentState } from './current_state.js'
 
