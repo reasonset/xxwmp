@@ -6,7 +6,7 @@ import { msg_show } from './msgwindow.js'
 import { currentState } from './current_state.js'
 
 const mediaURI = function (path) {
-  const origin = ["", "/media/", appdata.user, path.split("/").map(encodeURIComponent).join("/") ].join("/")
+  const origin = ["", "media", appdata.user, path.split("/").map(encodeURIComponent).join("/") ].join("/")
   if (currentState.transcode[origin]) {
     return currentState.transcode[origin]
   } else {
