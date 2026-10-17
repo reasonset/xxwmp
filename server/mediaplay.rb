@@ -15,6 +15,13 @@ class Xxwmp < Roda
     MEDIA_EXT_TXT = %w:.txt .xml .html .xhtml .css .json .yaml .yml .toml .md .rst .t2t .wiki:
     MEDIA_EXT_EXT = %w:.pdf:
 
+    def thumbnail_exist? path, fn
+      path_elem = [@config["transcode_root"], "thumb", @user]
+      path_elem.push(path) if path
+      path_elem.push(fn + ".thumb.webp")
+      File.exist? File.join(*path_elem)
+    end
+    
     def dir
       path = @path.empty? ? nil : @path
       dirpath = path ? File.join(@root, path) : @root
@@ -41,19 +48,22 @@ class Xxwmp < Roda
             files["file"].push({
               "type" => "video",
               "path" => (path ? File.join(path, fn) : fn),
-              "ext" => ext
+              "ext" => ext,
+              "thumbnail" => thumbnail_exist?(path, fn)
             })
           elsif MEDIA_EXT_AUD.include? ext.downcase
             files["file"].push({
               "type" => "music",
               "path" => (path ? File.join(path, fn) : fn),
               "ext" => ext
+              "thumbnail" => thumbnail_exist?(path, fn)
             })
           elsif MEDIA_EXT_IMG.include? ext.downcase
             files["file"].push({
               "type" => "image",
               "path" => (path ? File.join(path, fn) : fn),
               "ext" => ext
+              "thumbnail" => thumbnail_exist?(path, fn)
             })
           elsif MEDIA_EXT_TXT.include? ext.downcase
             files["file"].push({
