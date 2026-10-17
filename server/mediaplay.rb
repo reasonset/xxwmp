@@ -16,7 +16,7 @@ class Xxwmp < Roda
     MEDIA_EXT_EXT = %w:.pdf:
 
     def thumbnail_exist? path, fn
-      path_elem = [@config["transcode_root"], "thumb", @user]
+      path_elem = [@config["thumb_root"], @user]
       path_elem.push(path) if path
       path_elem.push(fn + ".thumb.webp")
       File.exist? File.join(*path_elem)

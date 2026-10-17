@@ -16,7 +16,7 @@ const mediaURI = function (path) {
 
 const thumbURI = function (path) {
   const path_encoded = (path + ".thumb.webp").split("/").map(i => encodeURIComponent(i)).join("/")
-  return ["", "transcode", "thumb" , appdata.user, path_encoded].join("/")
+  return ["", "thumb" , appdata.user, path_encoded].join("/")
 }
 
 const browseURI = function (path) {
