@@ -55,14 +55,14 @@ class Xxwmp < Roda
             files["file"].push({
               "type" => "music",
               "path" => (path ? File.join(path, fn) : fn),
-              "ext" => ext
+              "ext" => ext,
               "thumbnail" => thumbnail_exist?(path, fn)
             })
           elsif MEDIA_EXT_IMG.include? ext.downcase
             files["file"].push({
               "type" => "image",
               "path" => (path ? File.join(path, fn) : fn),
-              "ext" => ext
+              "ext" => ext,
               "thumbnail" => thumbnail_exist?(path, fn)
             })
           elsif MEDIA_EXT_TXT.include? ext.downcase
