@@ -22,7 +22,7 @@ def debug msg
   if ENV["DEBUG"] = "yes"
     if String === msg
       $stderr.puts msg
-    if Exception === msg
+    elsif Exception === msg
       $stderr.puts msg.full_message
     else
       $stderr.puts msg.inspect
