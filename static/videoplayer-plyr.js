@@ -1,4 +1,5 @@
 import 'https://cdn.plyr.io/3.8.4/plyr.js'
+import { audio_error_handler } from './audio-error-handler.js'
 
 const plyr_css = document.createElement("link")
 plyr_css.rel = "stylesheet"
@@ -22,14 +23,21 @@ const create_videoelem_plyr = function(src, tags=null) {
   const fec = dummy.firstElementChild
   fec.classList.add("video_player_box")
   fec.letsPlay = async () => { media_div.play() }
+  fec.handlePlay = async () => { media_div.play() }
+  fec.handlePause = async () => { media_div.pause() }
   fec.updateSrc = (src, tags) => { player_raw.src = src }
   fec.id = "MediaPlayer"
+
+  fec.call_ended = callback => {
+    player_raw.addEventListener("ended", callback)
+  }
 
   return fec
 }
 
 const create_audioelem_plyr = function(src, tags=null) {
   const player_raw = document.createElement("audio")
+  player_raw.addEventListener("error", audio_error_handler)
   const dummy = document.createElement("div")
   dummy.appendChild(player_raw)
 
@@ -43,8 +51,14 @@ const create_audioelem_plyr = function(src, tags=null) {
   
   const fec = dummy.firstElementChild
   fec.letsPlay = async () => { media_div.play() }
+  fec.handlePlay = async () => { media_div.play() }
+  fec.handlePause = async () => { media_div.pause() }
   fec.updateSrc = (src, tags) => { player_raw.src = src }
   fec.id = "MediaPlayer"
+
+  fec.call_ended = callback => {
+    player_raw.addEventListener("ended", callback)
+  }
 
   return fec
 }
