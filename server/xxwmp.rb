@@ -19,7 +19,7 @@ Encoding.default_external = "UTF-8"
 Encoding.default_internal = "UTF-8"
 
 def debug msg
-  if ENV["DEBUG"] = "yes"
+  if ENV["DEBUG"] == "yes"
     if String === msg
       $stderr.puts msg
     elsif Exception === msg
